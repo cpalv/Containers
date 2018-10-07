@@ -1,0 +1,43 @@
+https://www.tldp.org/HOWTO/Bootdisk-HOWTO/buildroot.html
+
+NEED:
+
+/dev
+/bin
+/sbin
+/proc
+/etc
+/lib
+/usr
+/tmp
+
+Make a filesystem
+	
+	$ touch FILESYSTEM
+	$ mkfs.ext2 FILESYSTEM 15728640 # 15 GB, made a huge fs cause 5GB was running outta space
+
+Build directory struct
+	$ mount FILESYSTEM /mnt
+	$ cd /mnt
+	$ mkdir dev bin sbin proc etc lib usr tmp
+	
+proc is a pseudo filesystem so it doesn't need any contents.
+the proc-fs will be mounted by the container program
+
+For some reason my shared objects have symlinks to /usr/{lib,lib64} 
+for simplicity these directories have been copied over 
+
+	$ ldd mnt/bin/bash
+		linux-vdso.so.1 (0x00007ffe8f311000)
+		libreadline.so.7 => /usr/lib/libreadline.so.7 (0x00007f949cfb7000)
+		libdl.so.2 => /usr/lib/libdl.so.2 (0x00007f949cdb3000)
+		libc.so.6 => /usr/lib/libc.so.6 (0x00007f949c9fc000)
+		libncursesw.so.6 => /usr/lib/libncursesw.so.6 (0x00007f949c7c4000)
+		/lib64/ld-linux-x86-64.so.2 => /usr/lib64/ld-linux-x86-64.so.2 (0x00007f949d205000)
+		libtinfo.so.6 => /usr/lib/libtinfo.so.6 (0x00007f949c598000)
+
+rebuild ld.conf for new filesystem
+	$ ldconfig -r /mnt
+
+Should now be able to make a container, run
+	$ sudo go run container.go run /bin/bash
